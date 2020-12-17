@@ -1,0 +1,8 @@
+enum State {
+  UNKNOWN,
+  SEARCHING_FOR_HOME,
+  MOVE_TO_IDLE,
+  IDLE,
+  MOVE_TO_VACUUM,
+  VACUUM
+};

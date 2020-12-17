@@ -1,0 +1,5 @@
+{
+    "sketch": "app.ino",
+    "board": "atmel-avr-xminis:avr:atmega328pb_xplained_mini",
+    "port": "COM7"
+}
