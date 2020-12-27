@@ -6,6 +6,7 @@
 #include "DebouncedSwitch.cpp"
 #include <State.h>
 #include <Configuration.h>
+#include <NewPing.h>
 
 void stateMachineUpdate();
 
@@ -14,18 +15,25 @@ AccelStepper stepper = AccelStepper(STEPPER_INTERFACE_TYPE, DRIVER_STEP_PIN, DRI
 
 DebouncedSwitch homeSwitch = DebouncedSwitch(HOME_SWITCH_PIN);
 
+NewPing distanceSensor = NewPing(DISTANCE_SENSOR_OUTPUT_PIN, DISTANCE_SENSOR_INPUT_PWM);
+
 State currentState = UNKNOWN;
 
 unsigned long vacuumStartTime = 0; 
 
+unsigned long robotRoamTime = 0;
+
 void setup() {
+  pinMode(VACUUM_RELAY_PIN, OUTPUT);
+  digitalWrite(VACUUM_RELAY_PIN, LOW);
+
   // Set the maximum speed in steps per second:
   stepper.setEnablePin(DRIVER_ENABLE_PIN);
   stepper.setPinsInverted(false, false, true);
   stepper.setMaxSpeed(1000);
 
   Serial.begin(9600);
-  Serial.println("Setup 2");
+  Serial.println("Setup");
 }
 
 void loop() {
@@ -52,15 +60,35 @@ void stateMachineUpdate() {
 
   switch (currentState) {
   case UNKNOWN:
-    if (homeSwitch.getState()) {
-      currentState = MOVE_TO_IDLE;
-    } else {
-      currentState = SEARCHING_FOR_HOME;
+    currentState = SEARCHING_FOR_HOME;
+    break;
+  case IDLE:
+    //Robot has left
+    if (distanceSensor.ping_cm() > MAX_PARK_DISTANCE_CM) {
+      currentState = ROBOT_ROAMING;
+    }
+    break;
+  case ROBOT_ROAMING:
+    if (robotRoamTime == 0) {
+      robotRoamTime = millis();
+    }
+
+    //robot returned
+    if (distanceSensor.ping_cm() <= MAX_PARK_DISTANCE_CM) {
+
+      if (millis() >= robotRoamTime + MIN_ROAMING_TIME_MS) {
+        //Robot was gone for awhile so start the vacuum procedure
+        currentState = MOVE_TO_VACUUM;
+      } else {
+        //Lost robot for short time, don't vacuum
+        currentState = IDLE;
+      }
+
+      robotRoamTime = 0;
     }
     break;
   case MOVE_TO_IDLE:
     //Raise axis away from Vacuum
-    stepper.setCurrentPosition(0);
     blockToPoistion(IDLE_POSITION);
     
     currentState = IDLE;
@@ -72,11 +100,13 @@ void stateMachineUpdate() {
     stepper.runSpeed();
 
     if (homeSwitch.getState()) {
+      stepper.setCurrentPosition(0);
       stepper.disableOutputs();
       currentState = MOVE_TO_IDLE;
     }
     break;
   case MOVE_TO_VACUUM:
+    //Lower the vacuum arm
     blockToPoistion(0);
 
     currentState = VACUUM;
@@ -84,12 +114,13 @@ void stateMachineUpdate() {
   case VACUUM:
     if (vacuumStartTime == 0) {
       //Turn on vacuum
-
+      digitalWrite(VACUUM_RELAY_PIN, HIGH);
       vacuumStartTime = millis();
     }
 
     if (millis() > vacuumStartTime + VACUUM_RUNTIME_MS) {
       //Turn off vacuum
+      digitalWrite(VACUUM_RELAY_PIN, LOW);
       vacuumStartTime = 0;
 
       //Go to idle

@@ -16,7 +16,7 @@ class DebouncedSwitch {
 
   public:
 
-  DebouncedSwitch(int pin, void (*onChange)(bool) = nullptr) : onChange(onChange), curState(0), targetState(0), pin(pin), stateChangeTime(0) {
+  DebouncedSwitch(int pin, void (*onChange)(bool) = nullptr) : pin(pin), curState(0), targetState(0), stateChangeTime(0), onChange(onChange) {
     pinMode(pin, INPUT);
   }
 

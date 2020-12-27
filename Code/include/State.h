@@ -4,5 +4,6 @@ enum State {
   MOVE_TO_IDLE,
   IDLE,
   MOVE_TO_VACUUM,
-  VACUUM
+  VACUUM,
+  ROBOT_ROAMING
 };
