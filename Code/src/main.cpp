@@ -15,9 +15,10 @@ AccelStepper stepper = AccelStepper(STEPPER_INTERFACE_TYPE, DRIVER_STEP_PIN, DRI
 
 DebouncedSwitch homeSwitch = DebouncedSwitch(HOME_SWITCH_PIN);
 
-NewPing distanceSensor = NewPing(DISTANCE_SENSOR_OUTPUT_PIN, DISTANCE_SENSOR_INPUT_PWM);
+NewPing distanceSensor = NewPing(DISTANCE_SENSOR_TRIGGER_PIN, DISTANCE_SENSOR_INPUT_PWM);
 
 State currentState = UNKNOWN;
+State lastState = UNKNOWN;
 
 unsigned long vacuumStartTime = 0; 
 
@@ -47,7 +48,7 @@ void loop() {
 
 void blockToPoistion(long position) {
     stepper.enableOutputs();
-    stepper.move(position);
+    stepper.moveTo(position);
     stepper.setSpeed(MOVEMENT_SPEED);
     while (stepper.distanceToGo() != 0) {
       stepper.runSpeedToPosition();
@@ -56,7 +57,10 @@ void blockToPoistion(long position) {
 }
 
 void stateMachineUpdate() {
-  //Serial.println(currentState);
+  if (lastState != currentState) {
+    Serial.println(currentState);
+    lastState = currentState;
+  }
 
   switch (currentState) {
   case UNKNOWN:
@@ -64,7 +68,7 @@ void stateMachineUpdate() {
     break;
   case IDLE:
     //Robot has left
-    if (distanceSensor.ping_cm() > MAX_PARK_DISTANCE_CM) {
+    if (distanceSensor.convert_cm(distanceSensor.ping_median(8)) > MAX_PARK_DISTANCE_CM) {
       currentState = ROBOT_ROAMING;
     }
     break;
@@ -74,7 +78,7 @@ void stateMachineUpdate() {
     }
 
     //robot returned
-    if (distanceSensor.ping_cm() <= MAX_PARK_DISTANCE_CM) {
+    if (distanceSensor.convert_cm(distanceSensor.ping_median(8)) <= MAX_PARK_DISTANCE_CM) {
 
       if (millis() >= robotRoamTime + MIN_ROAMING_TIME_MS) {
         //Robot was gone for awhile so start the vacuum procedure
