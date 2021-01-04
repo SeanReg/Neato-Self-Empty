@@ -16,7 +16,7 @@
 #define MAX_PARK_DISTANCE_CM 7
 
 //Min time for vacuum to be gone before considered roaming
-#define MIN_ROAMING_TIME_MS 5 * 60 * 1000L
+#define MIN_ROAMING_TIME_MS 10 * 60 * 1000L
 
 //Stepper movement speeds
 #define MOVEMENT_SPEED 400
