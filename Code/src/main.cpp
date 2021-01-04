@@ -1,4 +1,3 @@
-/*Example sketch to control a stepper motor with A4988 stepper motor driver, AccelStepper library and Arduino: continuous rotation. More info: https://www.makerguides.com */
 
 // Include the AccelStepper library:
 #include <AccelStepper.h>
