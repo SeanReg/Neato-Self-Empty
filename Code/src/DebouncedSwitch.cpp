@@ -25,7 +25,7 @@ class DebouncedSwitch {
       //State changed
       stateChangeTime = millis();
       targetState = !targetState;     
-    } else if (stateChangeTime > 0 && millis() > stateChangeTime + DEBOUNCE_TIME) {
+    } else if (curState != targetState && millis() > stateChangeTime + DEBOUNCE_TIME) {
       curState = targetState;
 
       if (onChange != nullptr) {
